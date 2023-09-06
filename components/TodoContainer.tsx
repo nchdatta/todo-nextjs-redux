@@ -1,16 +1,41 @@
 'use client'
-import { useCallback } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useState } from 'react';
+import SelectDropdown from './SelectDropdown';
+import TodoList from './TodoList';
+import TodoModal from './TodoModal';
+import { statusList } from '@/utils/constants';
+import { useSelector } from 'react-redux';
+import { type TodoType, type TodoStateType } from '@/utils/types';
 
 const TodoContainer = () => {
-    const todoLength: number = useSelector((state: { todo: { length: number } }) => state.todo.length);
-    const dispatch = useDispatch();
-    const incrementCounter = useCallback(() => dispatch({ type: "todo/increment" }), []);
+    const [openModal, setOpenModal] = useState<boolean>(false);
+    const todoList = useSelector((state: TodoStateType) => state.todo.todoList);
+    const [allTodoList, setAllTodoList] = useState<TodoType[]>(todoList ? todoList : []);
+    const currentUser = useSelector((state: TodoStateType) => state.todo.currentUser);
+
+    const handleStatusChange = (e: any) => {
+        const { value } = e?.target;
+        if (value) {
+            const todoListFiltered: TodoType[] = todoList?.filter((todo: TodoType) => todo.status === value);
+            setAllTodoList(todoListFiltered);
+        } else {
+            setAllTodoList(todoList);
+        }
+    }
 
     return (
-        <div className='py-3'>
-            <h1 className='mb-2'>Number of Todos: {todoLength}</h1>
-            <button className='border px-3 py-1' onClick={incrementCounter}>Increment</button>
+        <div className='mt-5'>
+            <p className='font-light text-sm text-slate-800'>Hello, <span className='font-medium'>{currentUser?.name}</span> </p>
+
+            <div className='flex flex-col md:flex-row justify-between items-center gap-2'>
+                <button onClick={() => setOpenModal(true)} className='border border-gray-100 bg-slate-400 hover:bg-slate-500 transition-colors px-3 py-1 rounded text-white' type='button'>Add Task</button>
+                <SelectDropdown handleSetTodoFields={handleStatusChange} name='status' data={statusList} />
+            </div>
+
+            {/* Todo List  */}
+            <TodoList todoList={allTodoList} />
+
+            {openModal && <TodoModal openModal setOpenModal={setOpenModal} />}
         </div>
     );
 };
