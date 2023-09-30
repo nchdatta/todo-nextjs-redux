@@ -33,9 +33,9 @@ const TodoContainer = () => {
             </div>
 
             {/* Todo List  */}
-            <TodoList todoList={allTodoList} />
+            <TodoList todoList={allTodoList} setAllTodoList={setAllTodoList} />
 
-            {openModal && <TodoModal openModal setOpenModal={setOpenModal} />}
+            {openModal && <TodoModal openModal setOpenModal={setOpenModal} setAllTodoList={setAllTodoList} />}
         </div>
     );
 };

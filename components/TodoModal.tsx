@@ -1,24 +1,29 @@
 'use client'
-import { FC, Dispatch, SetStateAction, useState } from 'react';
+import { FC, Dispatch, SetStateAction, useState, useEffect } from 'react';
 import SelectDropdown from './SelectDropdown';
 import { dateTime, statusList, usersList } from '@/utils/constants';
-import { useDispatch } from 'react-redux';
-import { addTodo } from '@/utils/redux/todoSlice';
-import { type UserType } from '@/utils/types';
+import { useDispatch, useSelector } from 'react-redux';
+import { addTodo, updateTodo } from '@/utils/redux/todoSlice';
+import { TodoStateType, type UserType } from '@/utils/types';
+import toast from 'react-hot-toast/headless';
 
 type TodoModalProps = {
     openModal: boolean,
-    setOpenModal: Dispatch<SetStateAction<boolean>>
+    setOpenModal: Dispatch<SetStateAction<boolean>>,
+    id?: number,
+    setAllTodoList?: any
 }
 
 type TodoFields = {
     title: string,
     assignedTo: string | number,
-    status: string
+    status: string,
 }
 
-const TodoModal: FC<TodoModalProps> = ({ openModal, setOpenModal }) => {
+const TodoModal: FC<TodoModalProps> = ({ openModal, setOpenModal, id, setAllTodoList }) => {
     const dispatch = useDispatch();
+
+    const todoList = useSelector((state: TodoStateType) => state.todo.todoList);
 
     const [todoFields, setTodoFields] = useState<TodoFields>({
         title: "",
@@ -36,12 +41,34 @@ const TodoModal: FC<TodoModalProps> = ({ openModal, setOpenModal }) => {
 
     const handleAddTodo = () => {
         if (todoFields.title !== "" && todoFields.assignedTo !== "" && todoFields.status !== "") {
-            const payload = {
-                ...todoFields,
-                time: dateTime,
-                assignedTo: usersList?.find((user: UserType) => user.value === Number(todoFields.assignedTo))
-            };
-            dispatch(addTodo(payload));
+            let payload;
+
+            if (id) {
+                const todo = todoList.find((todo) => todo.id === id);
+                if (todo) {
+                    payload = {
+                        ...todo,
+                        title: todoFields.title,
+                        assignedTo: usersList?.find((user: UserType) => user.value === Number(todoFields.assignedTo)),
+                        status: todoFields.status,
+                    };
+                    dispatch(updateTodo(payload));
+                    toast.success("Updated!")
+                }
+
+            }
+            else {
+                payload = {
+                    ...todoFields,
+                    id: todoList?.length + 1,
+                    time: dateTime,
+                    assignedTo: usersList?.find((user: UserType) => user.value === Number(todoFields.assignedTo))
+                };
+
+                dispatch(addTodo(payload));
+                toast.success("Added!")
+            }
+            setAllTodoList([...todoList, payload]);
             setOpenModal(false);
         } else {
             alert("Put/Select some value!");
@@ -49,6 +76,19 @@ const TodoModal: FC<TodoModalProps> = ({ openModal, setOpenModal }) => {
         }
     }
 
+
+    useEffect(() => {
+        if (id) {
+            const todo = todoList.find((todo) => todo.id === id);
+            if (todo) {
+                setTodoFields({
+                    title: todo.title,
+                    assignedTo: todo?.assignedTo.value,
+                    status: todo?.status
+                });
+            }
+        }
+    }, [id, todoList])
 
 
     return (
@@ -73,11 +113,11 @@ const TodoModal: FC<TodoModalProps> = ({ openModal, setOpenModal }) => {
                     <div className="p-6">
                         <div className="mb-3">
                             <label htmlFor="default-input" className="block mb-2 text-sm font-medium text-gray-900">Title</label>
-                            <input onChange={handleSetTodoFields} name='title' type="text" id="title" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+                            <input onChange={handleSetTodoFields} value={todoFields.title} name='title' type="text" id="title" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
                         </div>
 
-                        <SelectDropdown handleSetTodoFields={handleSetTodoFields} name='assignedTo' data={usersList?.filter((user: UserType) => user.value !== 1)} label='Select User' width='w-full' mb='mb-3' />
-                        <SelectDropdown handleSetTodoFields={handleSetTodoFields} name='status' data={statusList} label='Select Status' width='w-full' mb='mb-3' />
+                        <SelectDropdown handleSetTodoFields={handleSetTodoFields} value={todoFields.assignedTo} name='assignedTo' data={usersList?.filter((user: UserType) => user.value !== 1)} label='Select User' width='w-full' mb='mb-3' />
+                        <SelectDropdown handleSetTodoFields={handleSetTodoFields} value={todoFields.status} name='status' data={statusList} label='Select Status' width='w-full' mb='mb-3' />
                     </div>
 
                     {/* Modal footer  */}
